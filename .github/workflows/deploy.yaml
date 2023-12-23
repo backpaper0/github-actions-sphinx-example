@@ -1,0 +1,52 @@
+#
+# Check [Read and write permissions] in
+# Settings > Actions > General > Workflow permissions
+#
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          path: main
+
+      - name: Checkout gh-pages branch
+        uses: actions/checkout@v4
+        with:
+          path: pages
+          ref: gh-pages
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Setup Sphinx
+        run: |-
+          pip3 install -U sphinx
+
+      - name: Build document
+        run: |-
+          cd main
+          make html
+
+      - name: Copy document to gh-pages
+        run: |-
+          find pages -mindepth 1 -maxdepth 1 ! -name '.nojekyll' ! -name '.git' -exec rm -fr {} +
+          cp -r main/_build/html/* pages/
+
+      - name: Commit and push
+        run: |-
+          cd pages
+          git config user.email "209262+backpaper0@users.noreply.github.com"
+          git config user.name "backpaper0"
+          git add .
+          git commit -m 'deploy'
+          git push origin gh-pages
